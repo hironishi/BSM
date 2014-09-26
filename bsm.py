@@ -12,8 +12,6 @@ class BSM:
     資産時価と資産ボラティリティを計算する
     """
 
-    maxCnt = 100000
-
     def __init__(self,equity=0.0,vola_e=0.0,dept=0.0,r=0.0,T=0):
         self._asset = equity + dept
         self._vola_a = vola_e
@@ -110,10 +108,10 @@ class BSM:
     def evaluation(self):
         """
         全体の最適化目的関数
-        :return:(株価-理論株価)^2 + (株価ボラ-理論株価ボラ)^2
+        :return:((株価-理論株価)/株価)^2 + ((株価ボラ-理論株価ボラ)/株価ボラ)^2
         """
-        delta_s = self._equity - self.TheoricalStockPrice()
-        delta_v = self._vola_e - self.TheoricalStockVola()
+        delta_s = (self._equity - self.TheoricalStockPrice())/self._equity
+        delta_v = (self._vola_e - self.TheoricalStockVola())/self._vola_e
         d = pow(delta_s,2.0) + pow(delta_v,2.0)
         self._eval = d
         return d
@@ -121,17 +119,17 @@ class BSM:
     def optimizeAssetAndAssetVola(self):
         """
         最適化を行うための関数
-        tolが1e-8以下になるまで最適化を最小化を続けるが、10000回やっても収束しない場合はbreakする。
+        tolが1e-8以下になるまで最適化を最小化を続けるが、値が変わらなくなったらbreakする
         :return:
         """
-        cnt = 0
-        while self.evaluation() > 1e-8:
+        last_eval = float("Inf")
+        while self.evaluation() > 1e-6:
+            if last_eval == self._eval:
+                print self
+                break
             self.updateAssetVola()
             self.updateAsset()
-            cnt += 1
-            if cnt > self.maxCnt:
-                print "Could not optimize : ",self
-                break
+            last_eval = self._eval
 
     def __repr__(self):
         """
@@ -142,7 +140,7 @@ class BSM:
 
 
 if __name__ == '__main__' :
-    b = BSM(equity=27648346000,vola_e=0.107645819,dept=33801000000,r=0.01,T=1)
+    b = BSM(equity=27648346000,vola_e=0.107645819,dept=33801000000,r=0.05,T=1)
 
     b.optimizeAssetAndAssetVola()
 
