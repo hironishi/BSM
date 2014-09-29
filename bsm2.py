@@ -83,20 +83,11 @@ class BSM:
         :param equity:
         :return:
         """
+        if x <= 0:
+            return float("Inf")
 
         return pow(self._vola_e - x * vola_a * self.Nd(self.d1(vola_a,x))/float(equity),2.0)
         #return pow(equity - x * self.Nd(self.d1(vola_a,x) + self._dept * math.exp(-self._r * self._T)*self.Nd(self.d2(vola_a,x))),2.0)
-
-    # def optAssetVola(self,x,asset,equity):
-    #     """
-    #     ¥sigma_e - A(0)*¥sigma_a * N(d1)/Eでvola_aを最適化するための関数
-    #     :param x:
-    #     :param asset:
-    #     :param equity:
-    #     :return:
-    #     """
-    #
-    #     return pow(self._vola_e - asset * x * self.Nd(self.d1(x,asset))/float(equity),2.0)
 
     def UpdateAssets(self,vola_a):
 
@@ -113,22 +104,19 @@ class BSM:
 
     def optimize(self):
 
-        vola_a = self.UpdateAssets(self._vola_a)
+        vola_a = self._vola_a
 
         while self._eval > 1E-8:
+            vola_a = self.UpdateAssets(vola_a)
             self.evaluation(vola_a)
             self._vola_a = vola_a
-            vola_a = self.UpdateAssets(self._vola_a)
+            self.TheoricalPD()
+            print self
 
-        self._vola_a = vola_a
-        self.TheoricalPD()
-
-        print self
+        #print self
 
     def TheoricalPD(self):
-        append = self._pds.append
-        for asset in self._assets:
-            append(self.Nd(-self.d2(self._vola_a,asset)))
+        self._pds = [self.Nd(-self.d2(self._vola_a,asset))*100 for asset in self._assets]
 
 
     def __repr__(self):
